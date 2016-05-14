@@ -19,8 +19,8 @@ type TextEvent struct {
 
 	eventType int
 	text      string
-	start     int
-	end       int
+	start     Loc
+	end       Loc
 	time      time.Time
 }
 
@@ -41,43 +41,43 @@ func UndoTextEvent(t *TextEvent, buf *Buffer) {
 
 // EventHandler executes text manipulations and allows undoing and redoing
 type EventHandler struct {
-	v    *View
+	Buf  *Buffer
 	undo *Stack
 	redo *Stack
 }
 
 // NewEventHandler returns a new EventHandler
-func NewEventHandler(v *View) *EventHandler {
+func NewEventHandler(b *Buffer) *EventHandler {
 	eh := new(EventHandler)
 	eh.undo = new(Stack)
 	eh.redo = new(Stack)
-	eh.v = v
+	eh.Buf = b
 	return eh
 }
 
 // Insert creates an insert text event and executes it
 func (eh *EventHandler) Insert(start int, text string) {
-	e := &TextEvent{
-		c:         eh.v.Cursor,
-		eventType: TextEventInsert,
-		text:      text,
-		start:     start,
-		end:       start + Count(text),
-		time:      time.Now(),
-	}
-	eh.Execute(e)
+	// e := &TextEvent{
+	// 	c:         eh.Buf.Cursor,
+	// 	eventType: TextEventInsert,
+	// 	text:      text,
+	// 	start:     start,
+	// 	end:       start + Count(text),
+	// 	time:      time.Now(),
+	// }
+	// eh.Execute(e)
 }
 
 // Remove creates a remove text event and executes it
 func (eh *EventHandler) Remove(start, end int) {
-	e := &TextEvent{
-		c:         eh.v.Cursor,
-		eventType: TextEventRemove,
-		start:     start,
-		end:       end,
-		time:      time.Now(),
-	}
-	eh.Execute(e)
+	// e := &TextEvent{
+	// 	c:         eh.Buf.Cursor,
+	// 	eventType: TextEventRemove,
+	// 	start:     start,
+	// 	end:       end,
+	// 	time:      time.Now(),
+	// }
+	// eh.Execute(e)
 }
 
 // Replace deletes from start to end and replaces it with the given string
@@ -92,7 +92,7 @@ func (eh *EventHandler) Execute(t *TextEvent) {
 		eh.redo = new(Stack)
 	}
 	eh.undo.Push(t)
-	ExecuteTextEvent(t, eh.v.Buf)
+	ExecuteTextEvent(t, eh.Buf)
 }
 
 // Undo the first event in the undo stack
@@ -135,12 +135,12 @@ func (eh *EventHandler) UndoOneEvent() {
 	te := t.(*TextEvent)
 	// Undo it
 	// Modifies the text event
-	UndoTextEvent(te, eh.v.Buf)
+	UndoTextEvent(te, eh.Buf)
 
 	// Set the cursor in the right place
 	teCursor := te.c
-	te.c = eh.v.Cursor
-	eh.v.Cursor = teCursor
+	te.c = eh.Buf.Cursor
+	eh.Buf.Cursor = teCursor
 
 	// Push it to the redo stack
 	eh.redo.Push(te)
@@ -183,11 +183,11 @@ func (eh *EventHandler) RedoOneEvent() {
 
 	te := t.(*TextEvent)
 	// Modifies the text event
-	UndoTextEvent(te, eh.v.Buf)
+	UndoTextEvent(te, eh.Buf)
 
 	teCursor := te.c
-	te.c = eh.v.Cursor
-	eh.v.Cursor = teCursor
+	te.c = eh.Buf.Cursor
+	eh.Buf.Cursor = teCursor
 
 	eh.undo.Push(te)
 }

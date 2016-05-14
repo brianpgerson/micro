@@ -154,7 +154,7 @@ func HandleCommand(input string, view *View) {
 				choice, canceled := messenger.YesNoPrompt("Perform replacement? (y,n)")
 				if canceled {
 					if view.Cursor.HasSelection() {
-						view.Cursor.SetLoc(view.Cursor.curSelection[0])
+						view.Buf.Cursor.Loc = view.Buf.Cursor.curSelection[0]
 						view.Cursor.ResetSelection()
 					}
 					messenger.Reset()
@@ -162,19 +162,19 @@ func HandleCommand(input string, view *View) {
 				}
 				if choice {
 					view.Cursor.DeleteSelection()
-					view.eh.Insert(match[0], replace)
+					view.Buf.Insert(FromCharPos(match[0], view.Buf), replace)
 					view.Cursor.ResetSelection()
 					messenger.Reset()
 				} else {
 					if view.Cursor.HasSelection() {
-						searchStart = view.Cursor.curSelection[1]
+						searchStart = ToCharPos(view.Cursor.curSelection[1], view.Buf)
 					} else {
-						searchStart = ToCharPos(view.Cursor.x, view.Cursor.y, view.Buf)
+						searchStart = ToCharPos(view.Cursor.Loc, view.Buf)
 					}
 					continue
 				}
 			} else {
-				view.eh.Replace(match[0], match[1], replace)
+				view.Buf.eh.Replace(match[0], match[1], replace)
 			}
 		}
 		if !found {

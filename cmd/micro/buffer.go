@@ -8,7 +8,7 @@ import (
 // It uses a rope to efficiently store the string and contains some
 // simple functions for saving and wrapper functions for modifying the rope
 type Buffer struct {
-	LineArray
+	*LineArray
 
 	// Path to the file on disk
 	Path string
@@ -20,9 +20,13 @@ type Buffer struct {
 	// Provide efficient and easy access to text and lines so the rope String does not
 	// need to be constantly recalculated
 	// These variables are updated in the update() function
-	Lines    []string
 	NumLines int
 	NumChars int
+	CurLine  string
+
+	Cursor Cursor
+
+	eh *EventHandler
 
 	// Syntax highlighting rules
 	rules []SyntaxRule
@@ -35,6 +39,18 @@ func NewBuffer(txt, path string) *Buffer {
 	b := new(Buffer)
 	b.Path = path
 	b.Name = path
+
+	b.LineArray = NewLineArray([]byte(txt))
+
+	b.Cursor = Cursor{
+		Loc: Loc{
+			x: 0,
+			y: 0,
+		},
+		Buf: b,
+	}
+	b.Cursor.ResetSelection()
+	b.eh = NewEventHandler(b)
 
 	b.Update()
 	b.UpdateRules()
@@ -51,6 +67,7 @@ func (b *Buffer) UpdateRules() {
 // Update fetches the string from the rope and updates the `text` and `lines` in the buffer
 func (b *Buffer) Update() {
 	b.NumLines = len(b.Lines)
+	b.CurLine = string(b.Lines[b.Cursor.y])
 }
 
 // Save saves the buffer to its default path
@@ -98,9 +115,22 @@ func (b *Buffer) Start() Loc {
 	return Loc{0, 0}
 }
 
+func (b *Buffer) Line(n int) string {
+	return string(b.Lines[n])
+}
+
+func (b *Buffer) Slice(start, end int) []string {
+	lines := b.Lines[start:end]
+	var slice []string
+	for _, line := range lines {
+		slice = append(slice, string(line))
+	}
+	return slice
+}
+
 // End returns the location of the last character in the buffer
 func (b *Buffer) End() Loc {
-	return Loc{len(b.Lines[len(b.Lines)-1]) - 1, b.NumLines}
+	return Loc{len(b.Lines[len(b.Lines)-1]), b.NumLines - 1}
 }
 
 // Len gives the length of the buffer

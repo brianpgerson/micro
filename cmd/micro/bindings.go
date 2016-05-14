@@ -295,7 +295,7 @@ func DefaultBindings() map[string]string {
 // CursorUp moves the cursor up
 func (v *View) CursorUp() bool {
 	if v.Cursor.HasSelection() {
-		v.Cursor.SetLoc(v.Cursor.curSelection[0])
+		v.Cursor.Loc = v.Cursor.curSelection[0]
 		v.Cursor.ResetSelection()
 	}
 	v.Cursor.Up()
@@ -305,7 +305,7 @@ func (v *View) CursorUp() bool {
 // CursorDown moves the cursor down
 func (v *View) CursorDown() bool {
 	if v.Cursor.HasSelection() {
-		v.Cursor.SetLoc(v.Cursor.curSelection[1])
+		v.Cursor.Loc = v.Cursor.curSelection[1]
 		v.Cursor.ResetSelection()
 	}
 	v.Cursor.Down()
@@ -315,7 +315,7 @@ func (v *View) CursorDown() bool {
 // CursorLeft moves the cursor left
 func (v *View) CursorLeft() bool {
 	if v.Cursor.HasSelection() {
-		v.Cursor.SetLoc(v.Cursor.curSelection[0])
+		v.Cursor.Loc = v.Cursor.curSelection[0]
 		v.Cursor.ResetSelection()
 	} else {
 		v.Cursor.Left()
@@ -326,7 +326,7 @@ func (v *View) CursorLeft() bool {
 // CursorRight moves the cursor right
 func (v *View) CursorRight() bool {
 	if v.Cursor.HasSelection() {
-		v.Cursor.SetLoc(v.Cursor.curSelection[1] - 1)
+		v.Cursor.Loc = v.Cursor.curSelection[1].Move(-1, v.Buf)
 		v.Cursor.ResetSelection()
 	} else {
 		v.Cursor.Right()
@@ -348,75 +348,75 @@ func (v *View) WordLeft() bool {
 
 // SelectUp selects up one line
 func (v *View) SelectUp() bool {
-	loc := v.Cursor.Loc()
+	loc := v.Cursor.Loc
 	if !v.Cursor.HasSelection() {
 		v.Cursor.origSelection[0] = loc
 	}
 	v.Cursor.Up()
-	v.Cursor.SelectTo(v.Cursor.Loc())
+	v.Cursor.SelectTo(v.Cursor.Loc)
 	return true
 }
 
 // SelectDown selects down one line
 func (v *View) SelectDown() bool {
-	loc := v.Cursor.Loc()
+	loc := v.Cursor.Loc
 	if !v.Cursor.HasSelection() {
 		v.Cursor.origSelection[0] = loc
 	}
 	v.Cursor.Down()
-	v.Cursor.SelectTo(v.Cursor.Loc())
+	v.Cursor.SelectTo(v.Cursor.Loc)
 	return true
 }
 
 // SelectLeft selects the character to the left of the cursor
 func (v *View) SelectLeft() bool {
-	loc := v.Cursor.Loc()
-	count := v.Buf.Len() - 1
-	if loc > count {
+	loc := v.Cursor.Loc
+	count := v.Buf.End().Move(-1, v.Buf)
+	if loc.GreaterThan(count) {
 		loc = count
 	}
 	if !v.Cursor.HasSelection() {
 		v.Cursor.origSelection[0] = loc
 	}
 	v.Cursor.Left()
-	v.Cursor.SelectTo(v.Cursor.Loc())
+	v.Cursor.SelectTo(v.Cursor.Loc)
 	return true
 }
 
 // SelectRight selects the character to the right of the cursor
 func (v *View) SelectRight() bool {
-	loc := v.Cursor.Loc()
-	count := v.Buf.Len() - 1
-	if loc > count {
+	loc := v.Cursor.Loc
+	count := v.Buf.End().Move(-1, v.Buf)
+	if loc.GreaterThan(count) {
 		loc = count
 	}
 	if !v.Cursor.HasSelection() {
 		v.Cursor.origSelection[0] = loc
 	}
 	v.Cursor.Right()
-	v.Cursor.SelectTo(v.Cursor.Loc())
+	v.Cursor.SelectTo(v.Cursor.Loc)
 	return true
 }
 
 // SelectWordRight selects the word to the right of the cursor
 func (v *View) SelectWordRight() bool {
-	loc := v.Cursor.Loc()
+	loc := v.Cursor.Loc
 	if !v.Cursor.HasSelection() {
 		v.Cursor.origSelection[0] = loc
 	}
 	v.Cursor.WordRight()
-	v.Cursor.SelectTo(v.Cursor.Loc())
+	v.Cursor.SelectTo(v.Cursor.Loc)
 	return true
 }
 
 // SelectWordLeft selects the word to the left of the cursor
 func (v *View) SelectWordLeft() bool {
-	loc := v.Cursor.Loc()
+	loc := v.Cursor.Loc
 	if !v.Cursor.HasSelection() {
 		v.Cursor.origSelection[0] = loc
 	}
 	v.Cursor.WordLeft()
-	v.Cursor.SelectTo(v.Cursor.Loc())
+	v.Cursor.SelectTo(v.Cursor.Loc)
 	return true
 }
 
@@ -434,23 +434,23 @@ func (v *View) EndOfLine() bool {
 
 // SelectToStartOfLine selects to the start of the current line
 func (v *View) SelectToStartOfLine() bool {
-	loc := v.Cursor.Loc()
+	loc := v.Cursor.Loc
 	if !v.Cursor.HasSelection() {
 		v.Cursor.origSelection[0] = loc
 	}
 	v.Cursor.Start()
-	v.Cursor.SelectTo(v.Cursor.Loc())
+	v.Cursor.SelectTo(v.Cursor.Loc)
 	return true
 }
 
 // SelectToEndOfLine selects to the end of the current line
 func (v *View) SelectToEndOfLine() bool {
-	loc := v.Cursor.Loc()
+	loc := v.Cursor.Loc
 	if !v.Cursor.HasSelection() {
 		v.Cursor.origSelection[0] = loc
 	}
 	v.Cursor.End()
-	v.Cursor.SelectTo(v.Cursor.Loc())
+	v.Cursor.SelectTo(v.Cursor.Loc)
 	return true
 }
 
@@ -463,29 +463,29 @@ func (v *View) CursorStart() bool {
 
 // CursorEnd moves the cursor to the end of the buffer
 func (v *View) CursorEnd() bool {
-	v.Cursor.SetLoc(v.Buf.Len())
+	v.Cursor.Loc = v.Buf.End()
 	return true
 }
 
 // SelectToStart selects the text from the cursor to the start of the buffer
 func (v *View) SelectToStart() bool {
-	loc := v.Cursor.Loc()
+	loc := v.Cursor.Loc
 	if !v.Cursor.HasSelection() {
 		v.Cursor.origSelection[0] = loc
 	}
 	v.CursorStart()
-	v.Cursor.SelectTo(0)
+	v.Cursor.SelectTo(v.Buf.Start())
 	return true
 }
 
 // SelectToEnd selects the text from the cursor to the end of the buffer
 func (v *View) SelectToEnd() bool {
-	loc := v.Cursor.Loc()
+	loc := v.Cursor.Loc
 	if !v.Cursor.HasSelection() {
 		v.Cursor.origSelection[0] = loc
 	}
 	v.CursorEnd()
-	v.Cursor.SelectTo(v.Buf.Len())
+	v.Cursor.SelectTo(v.Buf.End())
 	return true
 }
 
@@ -496,7 +496,7 @@ func (v *View) InsertSpace() bool {
 		v.Cursor.DeleteSelection()
 		v.Cursor.ResetSelection()
 	}
-	v.eh.Insert(v.Cursor.Loc(), " ")
+	v.Buf.Insert(v.Cursor.Loc, " ")
 	v.Cursor.Right()
 	return true
 }
@@ -509,12 +509,12 @@ func (v *View) InsertEnter() bool {
 		v.Cursor.ResetSelection()
 	}
 
-	v.eh.Insert(v.Cursor.Loc(), "\n")
-	ws := GetLeadingWhitespace(v.Buf.Lines[v.Cursor.y])
+	v.Buf.Insert(v.Cursor.Loc, "\n")
+	ws := GetLeadingWhitespace(v.Buf.CurLine)
 	v.Cursor.Right()
 
 	if settings["autoindent"].(bool) {
-		v.eh.Insert(v.Cursor.Loc(), ws)
+		v.Buf.Insert(v.Cursor.Loc, ws)
 		for i := 0; i < len(ws); i++ {
 			v.Cursor.Right()
 		}
@@ -529,7 +529,7 @@ func (v *View) Backspace() bool {
 	if v.Cursor.HasSelection() {
 		v.Cursor.DeleteSelection()
 		v.Cursor.ResetSelection()
-	} else if v.Cursor.Loc() > 0 {
+	} else if v.Cursor.Loc.GreaterThan(v.Buf.Start()) {
 		// We have to do something a bit hacky here because we want to
 		// delete the line by first moving left and then deleting backwards
 		// but the undo redo would place the cursor in the wrong place
@@ -539,21 +539,21 @@ func (v *View) Backspace() bool {
 		// If the user is using spaces instead of tabs and they are deleting
 		// whitespace at the start of the line, we should delete as if its a
 		// tab (tabSize number of spaces)
-		lineStart := v.Buf.Lines[v.Cursor.y][:v.Cursor.x]
+		lineStart := v.Buf.CurLine[:v.Cursor.x]
 		tabSize := int(settings["tabsize"].(float64))
 		if settings["tabsToSpaces"].(bool) && IsSpaces(lineStart) && len(lineStart) != 0 && len(lineStart)%tabSize == 0 {
-			loc := v.Cursor.Loc()
-			v.Cursor.SetLoc(loc - tabSize)
+			loc := v.Cursor.Loc
+			v.Cursor.Loc = loc.Move(-tabSize, v.Buf)
 			cx, cy := v.Cursor.x, v.Cursor.y
-			v.Cursor.SetLoc(loc)
-			v.eh.Remove(loc-tabSize, loc)
+			v.Cursor.Loc = loc
+			v.Buf.Remove(loc.Move(-tabSize, v.Buf), loc)
 			v.Cursor.x, v.Cursor.y = cx, cy
 		} else {
 			v.Cursor.Left()
 			cx, cy := v.Cursor.x, v.Cursor.y
 			v.Cursor.Right()
-			loc := v.Cursor.Loc()
-			v.eh.Remove(loc-1, loc)
+			loc := v.Cursor.Loc
+			v.Buf.Remove(loc.Move(-1, v.Buf), loc)
 			v.Cursor.x, v.Cursor.y = cx, cy
 		}
 	}
@@ -567,9 +567,9 @@ func (v *View) Delete() bool {
 		v.Cursor.DeleteSelection()
 		v.Cursor.ResetSelection()
 	} else {
-		loc := v.Cursor.Loc()
-		if loc < v.Buf.Len() {
-			v.eh.Remove(loc, loc+1)
+		loc := v.Cursor.Loc
+		if loc.LessThan(v.Buf.Start()) {
+			v.Buf.Remove(loc, loc.Move(1, v.Buf))
 		}
 	}
 	return true
@@ -584,12 +584,12 @@ func (v *View) InsertTab() bool {
 	}
 	if settings["tabsToSpaces"].(bool) {
 		tabSize := int(settings["tabsize"].(float64))
-		v.eh.Insert(v.Cursor.Loc(), Spaces(tabSize))
+		v.Buf.Insert(v.Cursor.Loc, Spaces(tabSize))
 		for i := 0; i < tabSize; i++ {
 			v.Cursor.Right()
 		}
 	} else {
-		v.eh.Insert(v.Cursor.Loc(), "\t")
+		v.Buf.Insert(v.Cursor.Loc, "\t")
 		v.Cursor.Right()
 	}
 	return true
@@ -619,9 +619,9 @@ func (v *View) Save() bool {
 // Find opens a prompt and searches forward for the input
 func (v *View) Find() bool {
 	if v.Cursor.HasSelection() {
-		searchStart = v.Cursor.curSelection[1]
+		searchStart = ToCharPos(v.Cursor.curSelection[1], v.Buf)
 	} else {
-		searchStart = ToCharPos(v.Cursor.x, v.Cursor.y, v.Buf)
+		searchStart = ToCharPos(v.Cursor.Loc, v.Buf)
 	}
 	BeginSearch()
 	return true
@@ -630,9 +630,9 @@ func (v *View) Find() bool {
 // FindNext searches forwards for the last used search term
 func (v *View) FindNext() bool {
 	if v.Cursor.HasSelection() {
-		searchStart = v.Cursor.curSelection[1]
+		searchStart = ToCharPos(v.Cursor.curSelection[1], v.Buf)
 	} else {
-		searchStart = ToCharPos(v.Cursor.x, v.Cursor.y, v.Buf)
+		searchStart = ToCharPos(v.Cursor.Loc, v.Buf)
 	}
 	messenger.Message("Finding: " + lastSearch)
 	Search(lastSearch, v, true)
@@ -642,9 +642,9 @@ func (v *View) FindNext() bool {
 // FindPrevious searches backwards for the last used search term
 func (v *View) FindPrevious() bool {
 	if v.Cursor.HasSelection() {
-		searchStart = v.Cursor.curSelection[0]
+		searchStart = ToCharPos(v.Cursor.curSelection[0], v.Buf)
 	} else {
-		searchStart = ToCharPos(v.Cursor.x, v.Cursor.y, v.Buf)
+		searchStart = ToCharPos(v.Cursor.Loc, v.Buf)
 	}
 	messenger.Message("Finding: " + lastSearch)
 	Search(lastSearch, v, false)
@@ -653,13 +653,13 @@ func (v *View) FindPrevious() bool {
 
 // Undo undoes the last action
 func (v *View) Undo() bool {
-	v.eh.Undo()
+	v.Buf.eh.Undo()
 	return true
 }
 
 // Redo redoes the last action
 func (v *View) Redo() bool {
-	v.eh.Redo()
+	v.Buf.eh.Redo()
 	return true
 }
 
@@ -713,16 +713,16 @@ func (v *View) Paste() bool {
 		v.Cursor.ResetSelection()
 	}
 	clip, _ := clipboard.ReadAll()
-	v.eh.Insert(v.Cursor.Loc(), clip)
-	v.Cursor.SetLoc(v.Cursor.Loc() + Count(clip))
+	v.Buf.Insert(v.Cursor.Loc, clip)
+	v.Cursor.Loc = v.Cursor.Loc.Move(Count(clip), v.Buf)
 	v.freshClip = false
 	return true
 }
 
 // SelectAll selects the entire buffer
 func (v *View) SelectAll() bool {
-	v.Cursor.curSelection[1] = 0
-	v.Cursor.curSelection[0] = v.Buf.Len()
+	v.Cursor.curSelection[1] = v.Buf.Start()
+	v.Cursor.curSelection[0] = v.Buf.End()
 	// Put the cursor at the beginning
 	v.Cursor.x = 0
 	v.Cursor.y = 0
