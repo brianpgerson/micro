@@ -43,42 +43,25 @@ func ToCharPos(x, y int, buf *Buffer) int {
 // is also simpler to use character indicies for other tasks such as
 // selection.
 type Cursor struct {
-	v *View
+	Loc
 
-	// The cursor display location
-	x int
-	y int
+	v *View
 
 	// Last cursor x position
 	lastVisualX int
 
 	// The current selection as a range of character numbers (inclusive)
-	curSelection [2]int
+	curSelection [2]Loc
 	// The original selection as a range of character numbers
 	// This is used for line and word selection where it is necessary
 	// to know what the original selection was
-	origSelection [2]int
-}
-
-// SetLoc sets the location of the cursor in terms of character number
-// and not x, y location
-// It's just a simple wrapper of FromCharPos
-func (c *Cursor) SetLoc(loc int) {
-	c.x, c.y = FromCharPos(loc, c.v.Buf)
-	c.lastVisualX = c.GetVisualX()
-}
-
-// Loc gets the cursor location in terms of character number instead
-// of x, y location
-// It's just a simple wrapper of ToCharPos
-func (c *Cursor) Loc() int {
-	return ToCharPos(c.x, c.y, c.v.Buf)
+	origSelection [2]Loc
 }
 
 // ResetSelection resets the user's selection
 func (c *Cursor) ResetSelection() {
-	c.curSelection[0] = 0
-	c.curSelection[1] = 0
+	c.curSelection[0] = c.v.Buf.Start()
+	c.curSelection[1] = c.v.Buf.Start()
 }
 
 // HasSelection returns whether or not the user has selected anything
@@ -88,20 +71,22 @@ func (c *Cursor) HasSelection() bool {
 
 // DeleteSelection deletes the currently selected text
 func (c *Cursor) DeleteSelection() {
-	if c.curSelection[0] > c.curSelection[1] {
-		c.v.eh.Remove(c.curSelection[1], c.curSelection[0])
-		c.SetLoc(c.curSelection[1])
-	} else if c.GetSelection() == "" {
+	if c.GetSelection() == "" {
 		return
+	}
+
+	if c.curSelection[0].GreaterThan(c.curSelection[1]) {
+		c.v.eh.Remove(c.curSelection[1], c.curSelection[0])
+		c.Loc = c.curSelection[1]
 	} else {
 		c.v.eh.Remove(c.curSelection[0], c.curSelection[1])
-		c.SetLoc(c.curSelection[0])
+		c.Loc = c.curSelection[0]
 	}
 }
 
 // GetSelection returns the cursor's selection
 func (c *Cursor) GetSelection() string {
-	if c.curSelection[0] > c.curSelection[1] {
+	if c.curSelection[0].GreaterThan(c.curSelection[1]) {
 		return c.v.Buf.Substr(c.curSelection[1], c.curSelection[0])
 	}
 	return c.v.Buf.Substr(c.curSelection[0], c.curSelection[1])
@@ -110,33 +95,33 @@ func (c *Cursor) GetSelection() string {
 // SelectLine selects the current line
 func (c *Cursor) SelectLine() {
 	c.Start()
-	c.curSelection[0] = c.Loc()
+	c.curSelection[0] = c.Loc
 	c.End()
-	if c.v.Buf.NumLines-1 > c.y {
-		c.curSelection[1] = c.Loc() + 1
-	} else {
-		c.curSelection[1] = c.Loc()
-	}
+	// if c.v.Buf.NumLines-1 > c.y {
+	// 	c.curSelection[1] = c.Loc() + 1
+	// } else {
+	c.curSelection[1] = c.Loc()
+	// }
 
 	c.origSelection = c.curSelection
 }
 
 // AddLineToSelection adds the current line to the selection
 func (c *Cursor) AddLineToSelection() {
-	loc := c.Loc()
+	loc := c.Loc
 
 	if loc < c.origSelection[0] {
 		c.Start()
-		c.curSelection[0] = c.Loc()
+		c.curSelection[0] = c.Loc
 		c.curSelection[1] = c.origSelection[1]
 	}
 	if loc > c.origSelection[1] {
 		c.End()
-		c.curSelection[1] = c.Loc()
+		c.curSelection[1] = c.Loc
 		c.curSelection[0] = c.origSelection[0]
 	}
 
-	if loc < c.origSelection[1] && loc > c.origSelection[0] {
+	if loc.LessThan(c.origSelection[1]) && loc.GreaterThan(c.origSelection[0]) {
 		c.curSelection = c.origSelection
 	}
 }
@@ -148,7 +133,7 @@ func (c *Cursor) SelectWord() {
 	}
 
 	if !IsWordChar(string(c.RuneUnder(c.x))) {
-		loc := c.Loc()
+		loc := c.Loc
 		c.curSelection[0] = loc
 		c.curSelection[1] = loc + 1
 		c.origSelection = c.curSelection

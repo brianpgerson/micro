@@ -1,52 +1,40 @@
 package main
 
 import (
-	"crypto/md5"
-	"github.com/vinzmay/go-rope"
 	"io/ioutil"
-	"strings"
 )
 
 // Buffer stores the text for files that are loaded into the text editor
 // It uses a rope to efficiently store the string and contains some
 // simple functions for saving and wrapper functions for modifying the rope
 type Buffer struct {
-	// Stores the text of the buffer
-	r *rope.Rope
+	LineArray
 
 	// Path to the file on disk
 	Path string
 	// Name of the buffer on the status line
 	Name string
 
-	// This is the text stored every time the buffer is saved to check if the buffer is modified
-	savedText           [16]byte
-	netInsertions       int
-	dirtySinceLastCheck bool
+	IsModified bool
 
 	// Provide efficient and easy access to text and lines so the rope String does not
 	// need to be constantly recalculated
 	// These variables are updated in the update() function
 	Lines    []string
 	NumLines int
+	NumChars int
 
 	// Syntax highlighting rules
 	rules []SyntaxRule
 	// The buffer's filetype
-	Filetype string
+	FileType string
 }
 
 // NewBuffer creates a new buffer from `txt` with path and name `path`
 func NewBuffer(txt, path string) *Buffer {
 	b := new(Buffer)
-	if txt == "" {
-		b.r = new(rope.Rope)
-	} else {
-		b.r = rope.New(txt)
-	}
 	b.Path = path
 	b.Name = path
-	b.savedText = md5.Sum([]byte(txt))
 
 	b.Update()
 	b.UpdateRules()
@@ -57,19 +45,11 @@ func NewBuffer(txt, path string) *Buffer {
 // UpdateRules updates the syntax rules and filetype for this buffer
 // This is called when the colorscheme changes
 func (b *Buffer) UpdateRules() {
-	b.rules, b.Filetype = GetRules(b)
-}
-
-func (b *Buffer) String() string {
-	if b.r.Len() != 0 {
-		return b.r.String()
-	}
-	return ""
+	b.rules, b.FileType = GetRules(b)
 }
 
 // Update fetches the string from the rope and updates the `text` and `lines` in the buffer
 func (b *Buffer) Update() {
-	b.Lines = strings.Split(b.String(), "\n")
 	b.NumLines = len(b.Lines)
 }
 
@@ -84,58 +64,50 @@ func (b *Buffer) SaveAs(filename string) error {
 	data := []byte(b.String())
 	err := ioutil.WriteFile(filename, data, 0644)
 	if err == nil {
-		b.savedText = md5.Sum(data)
-		b.netInsertions = 0
+		b.IsModified = false
 	}
 	return err
 }
 
-// IsDirty returns whether or not the buffer has been modified compared to the one on disk
-func (b *Buffer) IsDirty() bool {
-	if !b.dirtySinceLastCheck {
-		return false
-	}
-	if b.netInsertions == 0 {
-		isDirty := b.savedText != md5.Sum([]byte(b.String()))
-		b.dirtySinceLastCheck = isDirty
-		return isDirty
-	}
-	return true
-}
-
 // Insert a string into the rope
-func (b *Buffer) Insert(idx int, value string) {
-	b.dirtySinceLastCheck = true
-	b.netInsertions += len(value)
-	b.r = b.r.Insert(idx, value)
+func (b *Buffer) Insert(idx Loc, value string) {
+	b.IsModified = true
+	b.NumChars += len(value)
+	b.LineArray.Insert(idx, []byte(value))
 	b.Update()
 }
 
 // Remove a slice of the rope from start to end (exclusive)
 // Returns the string that was removed
-func (b *Buffer) Remove(start, end int) string {
-	b.dirtySinceLastCheck = true
-	b.netInsertions -= end - start
-	if start < 0 {
-		start = 0
+func (b *Buffer) Remove(start, end Loc) string {
+	b.IsModified = true
+	if start.LessThan(b.Start()) {
+		start = b.Start()
 	}
-	if end > b.Len() {
-		end = b.Len()
+	if end.GreaterThan(b.End()) {
+		end = b.End()
 	}
-	removed := b.Substr(start, end)
-	// The rope implenentation I am using wants indicies starting at 1 instead of 0
-	start++
-	end++
-	b.r = b.r.Delete(start, end-start)
+	removed := b.LineArray.Delete(start, end)
+	b.NumChars -= len(removed)
 	b.Update()
 	return removed
 }
 
-func (b *Buffer) Substr(start, end int) string {
-	return b.r.Substr(start+1, end-start).String()
+// Start returns the location of the first character in the buffer
+func (b *Buffer) Start() Loc {
+	return Loc{0, 0}
+}
+
+// End returns the location of the last character in the buffer
+func (b *Buffer) End() Loc {
+	return Loc{len(b.Lines[len(b.Lines)-1]) - 1, b.NumLines}
 }
 
 // Len gives the length of the buffer
 func (b *Buffer) Len() int {
-	return b.r.Len()
+	var sum int
+	for _, l := range b.Lines {
+		sum += len(l)
+	}
+	return sum
 }
