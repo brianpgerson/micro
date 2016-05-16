@@ -557,6 +557,7 @@ func (v *View) Backspace() bool {
 			v.Cursor.x, v.Cursor.y = cx, cy
 		}
 	}
+	v.Buf.Update()
 	v.Cursor.lastVisualX = v.Cursor.GetVisualX()
 	return true
 }

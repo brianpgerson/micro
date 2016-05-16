@@ -67,7 +67,9 @@ func (b *Buffer) UpdateRules() {
 // Update fetches the string from the rope and updates the `text` and `lines` in the buffer
 func (b *Buffer) Update() {
 	b.NumLines = len(b.Lines)
-	b.CurLine = string(b.Lines[b.Cursor.y])
+	if b.Cursor.y < b.NumLines {
+		b.CurLine = string(b.Lines[b.Cursor.y])
+	}
 }
 
 // Save saves the buffer to its default path

@@ -251,22 +251,22 @@ func (c *Cursor) Down() {
 // Left moves the cursor left one cell (if possible) or to the last line if it is at the beginning
 func (c *Cursor) Left() {
 	c.Loc = c.Loc.Move(-1, c.Buf)
-	c.lastVisualX = c.GetVisualX()
 	c.UpdateCurLine()
+	c.lastVisualX = c.GetVisualX()
 }
 
 // Right moves the cursor right one cell (if possible) or to the next line if it is at the end
 func (c *Cursor) Right() {
 	c.Loc = c.Loc.Move(1, c.Buf)
-	c.lastVisualX = c.GetVisualX()
 	c.UpdateCurLine()
+	c.lastVisualX = c.GetVisualX()
 }
 
 // End moves the cursor to the end of the line it is on
 func (c *Cursor) End() {
 	c.x = Count(c.Buf.CurLine)
-	c.lastVisualX = c.GetVisualX()
 	c.UpdateCurLine()
+	c.lastVisualX = c.GetVisualX()
 }
 
 // Start moves the cursor to the start of the line it is on
