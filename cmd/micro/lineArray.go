@@ -10,7 +10,13 @@ type LineArray struct {
 
 func NewLineArray(text []byte) *LineArray {
 	la := new(LineArray)
-	la.Lines = bytes.Split(text, []byte("\n"))
+	split := bytes.Split(text, []byte("\n"))
+	la.Lines = make([][]byte, len(split))
+	for i := range split {
+		la.Lines[i] = make([]byte, len(split[i]))
+		copy(la.Lines[i], split[i])
+	}
+
 	return la
 }
 
