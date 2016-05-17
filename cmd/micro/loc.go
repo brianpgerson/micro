@@ -55,6 +55,20 @@ func (l Loc) GreaterThan(b Loc) bool {
 	return false
 }
 
+// GreaterEqual returns true if b is greater than or equal to b
+func (l Loc) GreaterEqual(b Loc) bool {
+	if l.y > b.y {
+		return true
+	}
+	if l.y == b.y && l.x > b.x {
+		return true
+	}
+	if l == b {
+		return true
+	}
+	return false
+}
+
 func (l Loc) right(n int, buf *Buffer) Loc {
 	if l == buf.End() {
 		return l

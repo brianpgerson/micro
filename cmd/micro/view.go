@@ -233,6 +233,7 @@ func (v *View) MoveToMouseClick(x, y int) {
 	}
 	v.Cursor.x = x
 	v.Cursor.y = y
+	v.Cursor.UpdateCurLine()
 	v.Cursor.lastVisualX = v.Cursor.GetVisualX()
 }
 
@@ -515,18 +516,19 @@ func (v *View) DisplayView() {
 				highlightStyle = v.matches[lineN][colN]
 			}
 
-			// if v.Cursor.HasSelection() &&
-			// 	(charNum >= v.Cursor.curSelection[0] && charNum < v.Cursor.curSelection[1] ||
-			// 		charNum < v.Cursor.curSelection[0] && charNum >= v.Cursor.curSelection[1]) {
-			//
-			// 	lineStyle = tcell.StyleDefault.Reverse(true)
-			//
-			// 	if style, ok := colorscheme["selection"]; ok {
-			// 		lineStyle = style
-			// 	}
-			// } else {
-			lineStyle = highlightStyle
-			// }
+			charLoc := Loc{colN, lineN + v.Topline}
+			if v.Cursor.HasSelection() &&
+				(charLoc.GreaterEqual(v.Cursor.curSelection[0]) && charLoc.LessThan(v.Cursor.curSelection[1]) ||
+					charLoc.LessThan(v.Cursor.curSelection[0]) && charLoc.GreaterEqual(v.Cursor.curSelection[1])) {
+
+				lineStyle = tcell.StyleDefault.Reverse(true)
+
+				if style, ok := colorscheme["selection"]; ok {
+					lineStyle = style
+				}
+			} else {
+				lineStyle = highlightStyle
+			}
 
 			if ch == '\t' {
 				screen.SetContent(x+tabchars, lineN, ' ', nil, lineStyle)
@@ -549,17 +551,18 @@ func (v *View) DisplayView() {
 
 		// The newline may be selected, in which case we should draw the selection style
 		// with a space to represent it
-		// if v.Cursor.HasSelection() &&
-		// 	(charNum >= v.Cursor.curSelection[0] && charNum < v.Cursor.curSelection[1] ||
-		// 		charNum < v.Cursor.curSelection[0] && charNum >= v.Cursor.curSelection[1]) {
-		//
-		// 	selectStyle := defStyle.Reverse(true)
-		//
-		// 	if style, ok := colorscheme["selection"]; ok {
-		// 		selectStyle = style
-		// 	}
-		// 	screen.SetContent(x-v.leftCol+tabchars, lineN, ' ', nil, selectStyle)
-		// }
+		charLoc := Loc{x - v.leftCol + v.lineNumOffset + tabchars + 1, lineN + v.Topline}
+		if v.Cursor.HasSelection() &&
+			(charLoc.GreaterEqual(v.Cursor.curSelection[0]) && charLoc.LessThan(v.Cursor.curSelection[1]) ||
+				charLoc.LessThan(v.Cursor.curSelection[0]) && charLoc.GreaterEqual(v.Cursor.curSelection[1])) {
+
+			selectStyle := defStyle.Reverse(true)
+
+			if style, ok := colorscheme["selection"]; ok {
+				selectStyle = style
+			}
+			screen.SetContent(x-v.leftCol+tabchars, lineN, ' ', nil, selectStyle)
+		}
 
 		charNum++
 	}
