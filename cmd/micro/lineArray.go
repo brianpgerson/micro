@@ -34,8 +34,8 @@ func (la *LineArray) Insert(pos Loc, value []byte) {
 	x, y := pos.x, pos.y
 	for i := 0; i < len(value); i++ {
 		if value[i] == '\n' {
+			la.Split(Loc{x, y})
 			x = 0
-			la.NewlineBelow(y)
 			y++
 			continue
 		}
